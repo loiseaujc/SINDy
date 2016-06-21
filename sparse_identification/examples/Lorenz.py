@@ -14,6 +14,8 @@ by Loiseau & Brunton (submitted to JFM Rapids).
 Note: The sklearn python package is required for this example.
 ----
 
+Contact: loiseau@mech.kth.se
+
 """
 
 
