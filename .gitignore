@@ -1,2 +1,18 @@
 
 *.pyc
+
+*.egg
+
+*.txt
+
+sparse_identification.egg-info/PKG-INFO
+
+build/lib/sparse_identification/__init__.py
+
+build/lib/sparse_identification/core.py
+
+build/lib/sparse_identification/utils/__init__.py
+
+build/lib/sparse_identification/utils/constrained_least_squares.py
+
+build/lib/sparse_identification/utils/time_derivatives.py
