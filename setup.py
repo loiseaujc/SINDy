@@ -1,11 +1,12 @@
 from setuptools import setup, find_packages
+import os
 
 VERSION = "0.0.1"
 
 def read_requirements():
-    with open("requirements.txt", "r") as f:
-        content = f.readlines()
-    return [s.split("\n")[0] for s in content]
+    with open(os.path.join(os.path.dirname(__file__), "requirements.txt"), "r") as f:
+        content = f.read()
+    return content.split("\n")
 
 
 setup(name='sparse_identification',
@@ -16,5 +17,5 @@ setup(name='sparse_identification',
       description='Python library designed for sparse identification of nonlinear dynamical system',
       classifiers=["Programming Language :: Python",
                    "Topic :: Fluid dynamics"],
-      requires=read_requirements()
+      install_requires=read_requirements()
       )
