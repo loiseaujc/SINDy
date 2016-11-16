@@ -1,2 +1,1 @@
-from constrained_least_squares import lsqlin
 from time_derivatives import derivative
