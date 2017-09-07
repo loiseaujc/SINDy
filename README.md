@@ -6,4 +6,4 @@ Sparse Identification of Nonlinear Dynamics
 Examples
 --------
 
-Example in the 'repo <https://github.com/loiseaujc/SINDy/tree/master/examples>' along with an illustratory Jupyter-Notebook.
+Examples can be found in the 'repo <https://github.com/loiseaujc/SINDy/tree/master/examples>' along with an illustratory Jupyter-Notebook.
