@@ -16,3 +16,5 @@ build/lib/sparse_identification/utils/__init__.py
 build/lib/sparse_identification/utils/constrained_least_squares.py
 
 build/lib/sparse_identification/utils/time_derivatives.py
+
+examples/Lorenz/\.ipynb_checkpoints/
