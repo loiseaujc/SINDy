@@ -105,7 +105,7 @@ def lstsq_solve(A, b, l2=0, C=None, d=None, x0=None, opts=None):
 
     Outputs:
     -------
-        output : Return dictionnary, the otput of CVXOPT QP solver.
+        output : Return dictionnary, the output of CVXOPT QP solver.
     '''
     # --> Convert the matrices to CVX formats.
     A = numpy_to_cvxopt_matrix(A)
