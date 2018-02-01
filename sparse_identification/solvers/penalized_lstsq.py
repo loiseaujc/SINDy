@@ -1,7 +1,7 @@
 import numpy as np
 from cvxopt import solvers, matrix, spmatrix
 from scipy import sparse
-from scipy.linalg import norm
+from scipy.linalg import norm, cholesky
 
 from numpy.linalg import LinAlgError
 import warnings
@@ -12,7 +12,7 @@ def is_pos_def(A):
 
     if np.array_equal(A, A.T):  # Test the symmetry of the matrix.
         try:
-            np.linalg.cholesky(A)   # Test if it is positive definite.
+            cholesky(A + 1e-8*np.eye(A.shape[0]))   # Test if it is positive definite.
             return True
         except LinAlgError:
             return False
@@ -79,7 +79,7 @@ def numpy_to_cvxopt_matrix(A):
         else:
             return A
 
-def lasso(A, b, l1=0, l2=0, C=None, d=None, x0=None, opts=None, tol=1e-2):
+def lasso(A, b, l1=0, l2=0, C=None, d=None, x0=None, opts=None, tol=1e-2, weighted=False):
 
     # --> Convert the matrices to CVX formats.
     A = numpy_to_cvxopt_matrix(A)
@@ -140,7 +140,7 @@ def lasso(A, b, l1=0, l2=0, C=None, d=None, x0=None, opts=None, tol=1e-2):
         else:
             I = matrix(np.eye(nvars), (nvars, nvars), 'd')
         P = P + l2 * I
-    # x = lstsq_solve(P, -q, l2=l2, C=C, d=d, x0=x0, opts=opts)
+
     output = solvers.qp(P, q, None, None, C, d, x0)['x']
     x = np.asarray(output).squeeze()
 
@@ -153,7 +153,12 @@ def lasso(A, b, l1=0, l2=0, C=None, d=None, x0=None, opts=None, tol=1e-2):
     if l1 < 1:
         # --> Sets up the inequality constraint matrix for the convex optimization.
         I = matrix(0.0, (n,n))
-        I[::n+1] = 1.0
+        if weighted is False:
+            I[::n+1] = 1.0
+        else:
+            # --> Weighted LASSO.
+            I[::n+1] = 1./abs(x)
+
         G = matrix([[I, -I, matrix(0.0, (1,n))], [-I, -I, matrix(1.0, (1,n))]])
         h = matrix(0.0, (2*n+1,1))
         h[-1] = (1.0-l1) * norm(x, ord=1)
@@ -177,16 +182,15 @@ def lasso(A, b, l1=0, l2=0, C=None, d=None, x0=None, opts=None, tol=1e-2):
         x = np.asarray(output).squeeze()
 
         # -->  Get the indices of the non-zero regressors.
-        for i in xrange(5):
-            xmax = abs(x).max()
-            I = [k for k in xrange(x.size) if abs(x[k]) > tol*xmax]
-            # coef = lstsq_solve(P[I, I], -q[I], l2=l2, C=C[:, I], d=d, x0=x[I], opts=opts)
-            if C is None:
-                output = solvers.qp(P[I, I], q[I], None, None, None, None, x[I])['x']
-            else:
-                output = solvers.qp(P[I, I], q[I], None, None, C[:, I], d, x[I])['x']
-            coef = np.asarray(output).squeeze()
-            x[:] = 0.
-            x[I] = coef
+        xmax = abs(x).max()
+        I = [k for k in xrange(x.size) if abs(x[k]) > tol*xmax]
+        # coef = lstsq_solve(P[I, I], -q[I], l2=l2, C=C[:, I], d=d, x0=x[I], opts=opts)
+        if C is None:
+            output = solvers.qp(P[I, I], q[I], None, None, None, None, x[I])['x']
+        else:
+            output = solvers.qp(P[I, I], q[I], None, None, C[:, I], d, x[I])['x']
+        coef = np.asarray(output).squeeze()
+        x[:] = 0.
+        x[I] = coef
 
     return x

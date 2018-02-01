@@ -18,26 +18,62 @@ class sindy(BaseEstimator, RegressorMixin):
 
     def fit(self, A, b, eq=None, ineq=None):
 
-        #--> Gets the user-defined constraints.
-        if eq is not None:
-            C = eq[0]
-            d = eq[1]
+        # --> Check for the dimension of b.
+        if b.ndim == 2 and b.shape[1] > 1:
+            self.coef_ = np.zeros((A.shape[1], b.shape[1]))
+        else:
+            b = b.ravel()
+            self.coef_ = np.zeros((A.shape[1],))
+
+        if b.ndim == 1:
+            #--> Gets the user-defined constraints.
+            if eq is not None:
+                C = eq[0]
+                d = eq[1]
+            else:
+                C = None
+                d = None
+
+            if self.solver == 'lstsq':
+                #--> Compute the initial guess for the sparse regression.
+                if self.l1 == 0:
+                    print '--> Solver : ordinary least_squares'
+                    coef = lstsq_solve(A, b, C=C, d=d, l2=self.l2)
+                else:
+                    print '--> Solver : hard-thresholded least_squares'
+                    coef = hard_threshold_lstsq_solve(A, b, C=C, d=d, l2=self.l2, l1=self.l1)
+            elif self.solver == 'lasso':
+                print '--> Solver : lasso'
+                coef = lasso(A, b, C=C, d=d, l2=self.l2, l1=self.l1, tol=self.tol)
+            elif self.solver == 'wlasso':
+                print '--> Solver : weighted-lasso'
+                coef = lasso(A, b, C=C, d=d, l2=self.l2, l1=self.l1, tol=self.tol, weighted=True)
+            else:
+                return ValueError('Desired solver has not been implemented yet.')
+
+            self.coef_[:] = coef
         else:
             C = None
             d = None
+            for i in xrange(b.shape[1]):
+                if self.solver == 'lstsq':
+                    #--> Compute the initial guess for the sparse regression.
+                    if self.l1 == 0:
+                        print '--> Solver : ordinary least_squares'
+                        coef = lstsq_solve(A, b[:, i], C=C, d=d, l2=self.l2)
+                    else:
+                        print '--> Solver : hard-thresholded least_squares'
+                        coef = hard_threshold_lstsq_solve(A, b[:, i], C=C, d=d, l2=self.l2, l1=self.l1)
+                elif self.solver == 'lasso':
+                    print '--> Solver : lasso'
+                    coef = lasso(A, b[:, i], C=C, d=d, l2=self.l2, l1=self.l1, tol=self.tol)
+                elif self.solver == 'wlasso':
+                    print '--> Solver : weighted-lasso'
+                    coef = lasso(A, b[:, i], C=C, d=d, l2=self.l2, l1=self.l1, tol=self.tol, weighted=True)
+                else:
+                    return ValueError('Desired solver has not been implemented yet.')
 
-        if self.solver == 'lstsq':
-            #--> Compute the initial guess for the sparse regression.
-            if self.l1 == 0:
-                coef = lstsq_solve(A, b, C=C, d=d, l2=self.l2)
-            else:
-                coef = hard_threshold_lstsq_solve(A, b, C=C, d=d, l2=self.l2, l1=self.l1)
-        elif self.solver == 'lasso':
-            coef = lasso(A, b, C=C, d=d, l2=self.l2, l1=self.l1, tol=self.tol)
-        else:
-            return ValueError('Desired solver has not been implemented yet.')
-
-        self.coef_ = coef
+                self.coef_[:, i] = coef
 
         return self
 

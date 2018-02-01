@@ -68,7 +68,7 @@ def Lorenz(x0, sigma, rho, beta, time):
 
     """
 
-    def dynamical_system(y,t):
+    def dynamical_system(y, t):
 
         dy = np.zeros_like(y)
         dy[0] = sigma*(y[1]-y[0])
@@ -156,11 +156,10 @@ def Identified_Model(y, t, library, estimator) :
 
     dy = np.zeros_like(y)
 
-    lib = library.fit_transform(y.reshape(1,-1))
-    Theta = block_diag(lib, lib, lib)
-    dy = Theta.dot(estimator.coef_)
+    lib = library.transform(y.reshape(1,-1))
+    dy = estimator.predict(lib)
 
-    return dy
+    return dy.ravel()
 
 def plot_results(t, X, Y):
 
@@ -220,34 +219,46 @@ if __name__ == '__main__':
     #-----------------------------------------------------------------------
 
     # ---> Compute the Library of polynomial features.
-    poly_lib = PolynomialFeatures(degree=2, include_bias=True)
-    lib = poly_lib.fit_transform(X)
-    Theta = block_diag(lib, lib, lib)
-    n_lib = poly_lib.n_output_features_
-
-    b = dX.flatten(order='F')
-    A = Theta
-
-    # ---> Specify the user-defined constraints.
-    C, d = constraints(poly_lib)
+    poly_lib = PolynomialFeatures(degree=5, include_bias=True)
+    A = poly_lib.fit_transform(X)
+    b = dX
 
     # ---> Create a linear regression estimator using sindy and identify the underlying equations.
-    estimator = sp.sindy(l1=0.01, solver='lasso')
-    estimator.fit(A, b)#, eq=[C, d])
+    gamma = 0.1
+    estimator_0 = sp.sindy(l2=0, l1=gamma, solver='lasso')
+    estimator_0.fit(A, b)
 
-    print "\n R2-score of the model : \n", estimator.score(Theta, dX.flatten(order='F')), "\n"
+    estimator_1 = sp.sindy(l2=0, l1=gamma, solver='wlasso')
+    estimator_1.fit(A, b)
     print "\n -------------------- \n"
     print "\n \n \n Identified equation for x : \n"
-    print estimator.coef_[:n_lib], "\n"
+    print estimator_0.coef_[:, 0], "\n"
     print "\n \n \n Identified equation for y : \n"
-    print estimator.coef_[n_lib:2*n_lib], "\n"
+    print estimator_0.coef_[:, 1], "\n"
     print "\n \n \n Identified equation for z : \n"
-    print estimator.coef_[2*n_lib:3*n_lib], "\n"
+    print estimator_0.coef_[:, 2], "\n"
     print "\n -------------------- \n"
 
-    #--> Simulates the identified model.
-    Y  = odeint(Identified_Model, x0, t, args=(poly_lib, estimator))
+    print "\n -------------------- \n"
+    print "\n \n \n Identified equation for x : \n"
+    print estimator_1.coef_[:, 0], "\n"
+    print "\n \n \n Identified equation for y : \n"
+    print estimator_1.coef_[:, 1], "\n"
+    print "\n \n \n Identified equation for z : \n"
+    print estimator_1.coef_[:, 2], "\n"
+    print "\n -------------------- \n"
 
-    #--> Plots the results to compare the dynamics of the identified system against the original one.
-    plot_results(t, X, Y)
+    fig = plt.figure()
+    ax = fig.gca()
+
+    ax.plot(estimator_0.coef_[:, 0], marker='o')
+    ax.plot(estimator_1.coef_[:, 0], marker='.', ls='')
+
     plt.show()
+
+    # #--> Simulates the identified model.
+    # Y  = odeint(Identified_Model, x0, t, args=(poly_lib, estimator))
+    #
+    # #--> Plots the results to compare the dynamics of the identified system against the original one.
+    # plot_results(t, X, Y)
+    # plt.show()
